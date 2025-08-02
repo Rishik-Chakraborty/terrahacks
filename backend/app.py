@@ -7,7 +7,9 @@ import requests
 import base64
 
 # Load environment variables from .env file
-load_dotenv()
+from pathlib import Path
+dotenv_path = Path(__file__).resolve().parent.parent / '.env'
+load_dotenv(dotenv_path=dotenv_path)
 
 # Configure the API key
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
