@@ -15,13 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.lang = 'en-US';
 
         recognition.onstart = () => {
-            addLogMessage('AI', 'Listening...');
+            addLogMessage('System', 'Listening...');
         };
 
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             addLogMessage('You', transcript);
-            getAIResponse(transcript);
+            getEchoResponse(transcript);
         };
 
         recognition.onerror = (event) => {
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isCallActive = true;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        addLogMessage('System', 'Call started.');
+        addLogMessage('System', 'Echo call started.');
         recognition.start();
     });
 
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         startBtn.disabled = false;
         stopBtn.disabled = true;
         recognition.stop();
-        addLogMessage('System', 'Call ended.');
+        addLogMessage('System', 'Echo call ended.');
     });
 
     function addLogMessage(sender, message) {
@@ -66,49 +66,30 @@ document.addEventListener('DOMContentLoaded', () => {
         chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    async function getAIResponse(userText) {
+    async function getEchoResponse(userText) {
         try {
-            // 1. Get generated text from Gemini
-            addLogMessage('AI', 'Thinking...');
-            const generateResponse = await fetch(`${API_BASE_URL}/generate`, {
+            addLogMessage('Echo AI', userText);
+
+            const echoResponse = await fetch(`${API_BASE_URL}/echo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: userText }),
+                body: JSON.stringify({ text: userText }),
             });
 
-            if (!generateResponse.ok) {
-                throw new Error(`Gemini API error: ${generateResponse.statusText}`);
+            if (!echoResponse.ok) {
+                throw new Error(`Echo API error: ${echoResponse.statusText}`);
             }
 
-            const generateData = await generateResponse.json();
-            const aiText = generateData.response;
+            const echoData = await echoResponse.json();
+            const audioBase64 = echoData.audio;
 
-            // Update "Thinking..." to the actual response
-            const thinkingMessage = chatLog.lastChild;
-            thinkingMessage.innerHTML = `<strong>AI:</strong> ${aiText}`;
-
-            // 2. Get audio from ElevenLabs
-            const ttsResponse = await fetch(`${API_BASE_URL}/tts`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: aiText }),
-            });
-
-            if (!ttsResponse.ok) {
-                throw new Error(`TTS API error: ${ttsResponse.statusText}`);
-            }
-
-            const ttsData = await ttsResponse.json();
-            const audioBase64 = ttsData.audio;
-
-            // 3. Play the audio
             const audioBlob = base64ToBlob(audioBase64, 'audio/mpeg');
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
             audio.play();
 
         } catch (error) {
-            console.error('Error getting AI response:', error);
+            console.error('Error getting echo response:', error);
             addLogMessage('System', `Error: ${error.message}`);
         }
     }

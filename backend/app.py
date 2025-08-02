@@ -1,21 +1,14 @@
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import requests
 import base64
+from pathlib import Path
 
 # Load environment variables from .env file
-from pathlib import Path
 dotenv_path = Path(__file__).resolve().parent.parent / '.env'
 load_dotenv(dotenv_path=dotenv_path)
-
-# Configure the API key
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
-# Create a model instance - using a more stable model
-model = genai.GenerativeModel('gemini-1.5-flash')
 
 app = Flask(__name__)
 CORS(app)
@@ -28,35 +21,19 @@ ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 @app.route('/')
 def home():
     return jsonify({
-        "message": "Voice AI Chat API",
+        "message": "Voice Echo API",
         "endpoints": {
             "health": "/api/health",
-            "generate": "/api/generate",
-            "text-to-speech": "/api/tts"
+            "echo": "/api/echo"
         }
     })
 
 @app.route('/api/health')
 def health():
-    return jsonify({"status": "healthy", "message": "Voice AI Chat API is running"})
+    return jsonify({"status": "healthy", "message": "Voice Echo API is running"})
 
-@app.route('/api/generate', methods=['POST'])
-def generate():
-    try:
-        data = request.get_json()
-        prompt = data.get('prompt', '')
-        
-        if not prompt:
-            return jsonify({"success": False, "error": "No prompt provided"}), 400
-        
-        response = model.generate_content(prompt)
-        return jsonify({"success": True, "response": response.text})
-    
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route('/api/tts', methods=['POST'])
-def text_to_speech():
+@app.route('/api/echo', methods=['POST'])
+def echo():
     try:
         data = request.get_json()
         text = data.get('text', '')
