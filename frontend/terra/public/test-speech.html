@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech Synthesis Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Speech Synthesis Test</h1>
+    
+    <div class="container">
+        <h3>Test Speech Synthesis</h3>
+        <button onclick="testSpeech()">Test Speech</button>
+        <button onclick="testVoices()">List Available Voices</button>
+        <div id="status"></div>
+    </div>
+
+    <div class="container">
+        <h3>Test with Custom Text</h3>
+        <textarea id="customText" rows="3" cols="50" placeholder="Enter text to speak...">Hello, this is a test of speech synthesis.</textarea>
+        <br>
+        <button onclick="speakCustomText()">Speak Custom Text</button>
+    </div>
+
+    <script>
+        function showStatus(message, isError = false) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerHTML = `<div class="status ${isError ? 'error' : 'success'}">${message}</div>`;
+        }
+
+        function testSpeech() {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance("Hello, this is a test of speech synthesis. If you can hear this, speech synthesis is working!");
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                utterance.onstart = () => {
+                    showStatus('Started speaking...');
+                };
+                
+                utterance.onend = () => {
+                    showStatus('Finished speaking!');
+                };
+                
+                utterance.onerror = (event) => {
+                    showStatus(`Speech error: ${event.error}`, true);
+                };
+                
+                speechSynthesis.speak(utterance);
+                showStatus('Speech synthesis is supported and speaking...');
+            } else {
+                showStatus('Speech synthesis is not supported in this browser.', true);
+            }
+        }
+
+        function testVoices() {
+            if ('speechSynthesis' in window) {
+                const voices = speechSynthesis.getVoices();
+                let voiceList = 'Available voices:\n';
+                voices.forEach((voice, index) => {
+                    voiceList += `${index + 1}. ${voice.name} (${voice.lang})\n`;
+                });
+                showStatus(voiceList);
+            } else {
+                showStatus('Speech synthesis is not supported.', true);
+            }
+        }
+
+        function speakCustomText() {
+            const text = document.getElementById('customText').value;
+            if (!text.trim()) {
+                showStatus('Please enter some text to speak.', true);
+                return;
+            }
+
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                utterance.onstart = () => {
+                    showStatus('Started speaking custom text...');
+                };
+                
+                utterance.onend = () => {
+                    showStatus('Finished speaking custom text!');
+                };
+                
+                utterance.onerror = (event) => {
+                    showStatus(`Speech error: ${event.error}`, true);
+                };
+                
+                speechSynthesis.speak(utterance);
+            } else {
+                showStatus('Speech synthesis is not supported in this browser.', true);
+            }
+        }
+
+        // Initialize voices when page loads
+        window.onload = function() {
+            if ('speechSynthesis' in window) {
+                speechSynthesis.onvoiceschanged = function() {
+                    const voices = speechSynthesis.getVoices();
+                    showStatus(`Loaded ${voices.length} voices`);
+                };
+            }
+        };
+    </script>
+</body>
+</html> 
