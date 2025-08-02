@@ -59,16 +59,6 @@ export default function VoiceChat() {
           setTranscript(finalTranscript);
           console.log('🎉 Final transcript captured:', finalTranscript);
           
-          // Auto-stop recording after getting final transcript
-          console.log('⏰ Setting auto-stop timer for 1.5 seconds');
-          setTimeout(() => {
-            if (isRecording) {
-              console.log('🛑 Auto-stopping recording after final transcript');
-              stopRecording();
-            } else {
-              console.log('❌ Not recording anymore, skipping auto-stop');
-            }
-          }, 1500); // Wait 1.5 seconds after final transcript
         } else if (interimTranscript) {
           setTranscript(interimTranscript);
           console.log('📝 Interim transcript updated:', interimTranscript);
