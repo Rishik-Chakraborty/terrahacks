@@ -10,7 +10,7 @@ import base64
 load_dotenv()
 
 # Configure the API key
-genai.configure(api_key="AIzaSyB9vu3unqqhMrKEk_EnDSvizk6XT8C4lMQ")
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # Create a model instance - using a more stable model
 model = genai.GenerativeModel('gemini-1.5-flash')
@@ -19,7 +19,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ElevenLabs configuration
-ELEVENLABS_API_KEY = "your-elevenlabs-api-key-here"  # Replace with your actual API key
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
 ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel voice (you can change this)
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 
