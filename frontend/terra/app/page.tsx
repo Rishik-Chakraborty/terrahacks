@@ -21,7 +21,6 @@ export default function VoiceChat() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
   const isInitializedRef = useRef(false);
   const finalTranscriptRef = useRef('');
 
@@ -112,21 +111,6 @@ export default function VoiceChat() {
       console.error('❌ Speech recognition not supported in this browser');
     } else {
       console.log('ℹ️ Speech recognition already initialized');
-    }
-
-    // Initialize speech synthesis
-    if ('speechSynthesis' in window) {
-      console.log('🔊 Speech synthesis supported, setting up voices');
-      // Wait for voices to load
-      speechSynthesis.onvoiceschanged = () => {
-        const voices = speechSynthesis.getVoices();
-        console.log('🎵 Voices loaded:', voices.length);
-        voices.forEach((voice, index) => {
-          console.log(`  ${index + 1}. ${voice.name} (${voice.lang})`);
-        });
-      };
-    } else {
-      console.error('❌ Speech synthesis not supported in this browser');
     }
   }, []);
 
@@ -249,13 +233,13 @@ export default function VoiceChat() {
       console.log('🌐 Sending to backend:', userMessage);
 
       // Send to backend with a more conversational prompt
-      const response = await fetch('http://localhost:5000/api/generate', {
+      const response = await fetch('http://localhost:5000/api/echo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: `You are a helpful AI assistant. The user said: "${userMessage}". Please respond naturally and conversationally to what they said. Keep your response helpful, friendly, and conversational.`
+          text: userMessage
         })
       });
 
@@ -264,18 +248,19 @@ export default function VoiceChat() {
       console.log('📄 Backend response data:', data);
       
       if (data.success) {
+        // Play the audio response
+        console.log('🔊 Playing audio response...');
+        playAudio(data.audio);
+
+        // Add a message to the chat to indicate AI is responding
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: data.response,
+          text: "AI is responding...",
           isUser: false,
           timestamp: new Date()
         };
-        console.log('🤖 Adding AI message to chat:', data.response);
         setMessages(prev => [...prev, aiMessage]);
-        
-        // Speak the response
-        console.log('🔊 Speaking response:', data.response);
-        speakText(data.response);
+
       } else {
         throw new Error(data.error || 'Failed to get response');
       }
@@ -297,65 +282,23 @@ export default function VoiceChat() {
     }
   };
 
-  const speakText = (text: string) => {
-    console.log('🔊 speakText called with:', text);
-    
-    if (!('speechSynthesis' in window)) {
-      console.log('❌ Speech synthesis not supported');
-      return;
-    }
-
-    // Cancel any ongoing speech
-    if (speechRef.current) {
-      console.log('🛑 Cancelling previous speech');
-      speechSynthesis.cancel();
-    }
-
+  const playAudio = (audioBase64: string) => {
     try {
-      console.log('🎵 Creating new utterance');
-      const utterance = new SpeechSynthesisUtterance(text);
-      speechRef.current = utterance;
+      const audioBlob = new Blob([Buffer.from(audioBase64, 'base64')], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
       
-      // Get available voices and select a good one
-      const voices = speechSynthesis.getVoices();
-      console.log('🎵 Available voices:', voices.length);
-      
-      const preferredVoice = voices.find(voice => 
-        voice.lang.includes('en') && voice.name.includes('Google')
-      ) || voices.find(voice => 
-        voice.lang.includes('en')
-      ) || voices[0];
-      
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-        console.log('🎵 Selected voice:', preferredVoice.name);
-      } else {
-        console.log('⚠️ No preferred voice found, using default');
-      }
-      
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      
-      utterance.onstart = () => {
-        console.log('🔊 Speech started');
+      audio.onplay = () => {
         setIsSpeaking(true);
       };
-      
-      utterance.onend = () => {
-        console.log('🔊 Speech finished');
+
+      audio.onended = () => {
         setIsSpeaking(false);
       };
-      
-      utterance.onerror = (event) => {
-        console.error('🚨 Speech synthesis error:', event);
-        setIsSpeaking(false);
-      };
-      
-      console.log('🔊 Starting speech synthesis');
-      speechSynthesis.speak(utterance);
+
+      audio.play();
     } catch (error) {
-      console.error('🚨 Error with speech synthesis:', error);
+      console.error('Error playing audio:', error);
     }
   };
 
@@ -378,13 +321,13 @@ export default function VoiceChat() {
       setMessages(prev => [...prev, userMsg]);
 
       console.log('🌐 Sending text to backend:', text);
-      const response = await fetch('http://localhost:5000/api/generate', {
+      const response = await fetch('http://localhost:5000/api/echo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: `You are a helpful AI assistant. The user said: "${text}". Please respond naturally and conversationally to what they said. Keep your response helpful, friendly, and conversational.`
+          text: text
         })
       });
 
@@ -393,16 +336,18 @@ export default function VoiceChat() {
       console.log('📄 Backend response data:', data);
       
       if (data.success) {
+        // Play the audio response
+        console.log('🔊 Playing audio response...');
+        playAudio(data.audio);
+
+        // Add a message to the chat to indicate AI is responding
         const aiMessage: Message = {
           id: (Date.now() + 1).toString(),
-          text: data.response,
+          text: "AI is responding...",
           isUser: false,
           timestamp: new Date()
         };
-        console.log('🤖 Adding AI message to chat:', data.response);
         setMessages(prev => [...prev, aiMessage]);
-        console.log('🔊 Speaking response:', data.response);
-        speakText(data.response);
       } else {
         throw new Error(data.error || 'Failed to get response');
       }
@@ -446,7 +391,7 @@ export default function VoiceChat() {
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
             <h1 className="text-2xl font-bold text-gray-800">Voice AI Chat</h1>
-            <p className="text-gray-600 mt-1">Chat with Gemini AI using voice or text</p>
+            <p className="text-gray-600 mt-1">Chat with our AI using voice or text</p>
           </div>
 
           {/* Messages */}
