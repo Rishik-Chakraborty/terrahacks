@@ -14,6 +14,9 @@ interface Pharmacy {
   lng?: number;
 }
 
+
+
+
 interface PharmacyLocatorProps {
   apiKey: string;
 }
@@ -194,42 +197,48 @@ export default function PharmacyLocator({ apiKey }: PharmacyLocatorProps) {
   };
 
   // Handle file upload
-  const handleFileUpload = async (file: File) => {
-    setSelectedFile(file);
+const handleFileUpload = async (file: File) => {
+  setSelectedFile(file);
 
-    // 1. Generate and store session ID
-    const sessionId = `session-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    localStorage.setItem('userSessionId', sessionId);
+  const sessionId = `session-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  localStorage.setItem('userSessionId', sessionId);
 
-    // 2. Create FormData and append file and sessionId
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('sessionId', sessionId);
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('sessionId', sessionId);
 
-    // 3. Upload to backend
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/upload', {
-        method: 'POST',
-        body: formData,
-      });
+  try {
+    setLoading(true);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Upload successful:', result);
-        alert('Prescription uploaded and processed successfully!');
-      } else {
-        const errorData = await response.json();
-        console.error('Upload failed:', errorData);
-        alert(`Upload failed: ${errorData.error}`);
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-      alert('An error occurred while uploading the file.');
-    } finally {
-      setLoading(false);
+    const response = await fetch('http://localhost:5000/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType?.includes('application/json');
+
+    if (!response.ok) {
+      const errorMessage = isJson
+        ? (await response.json()).error || 'Upload failed.'
+        : await response.text(); // fallback for HTML errors
+
+      console.error('Upload failed:', errorMessage);
+      alert(`Upload failed: ${errorMessage}`);
+      return;
     }
-  };
+
+    const result = isJson ? await response.json() : {};
+    console.log('Upload successful:', result);
+    alert('Prescription uploaded and processed successfully!');
+
+  } catch (err) {
+    console.error('Unexpected error during file upload:', err);
+    alert('Unexpected error occurred. Please try again later.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 3. Render Google Map with markers and InfoWindows
   useEffect(() => {
